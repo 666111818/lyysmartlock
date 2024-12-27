@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect  } from 'react';
 import '../css/smallbox1.css'; 
 import * as XLSX from "xlsx";
+import {fetchLockOperations } from './Metamask';
 
 function SmallBox1({ onClose }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [lockOperations, setLockOperations] = useState([]);
 
-  // 模拟表格数据
-  const data = [
-    { time: '2024-12-20 10:00', user: '用户A', status: '开锁' },
-    { time: '2024-12-20 11:30', user: '用户B', status: '关锁' },
-    { time: '2024-12-20 13:00', user: '用户C', status: '处理中' }
-  ];
+  // 获取锁操作记录
+  useEffect(() => {
+    const fetchData = async () => {
+      const operations = await fetchLockOperations();
+      setLockOperations(operations);
+    };
+
+    fetchData();
+  }, []);
+
 
   // 处理搜索框输入
   const handleSearchChange = (event) => {
@@ -18,8 +24,8 @@ function SmallBox1({ onClose }) {
   };
 
   // 过滤表格数据
-  const filteredData = data.filter(item =>
-    item.user.includes(searchTerm) || item.status.includes(searchTerm)
+  const filteredData = lockOperations.filter(item =>
+    item.user.includes(searchTerm) || item.operation.includes(searchTerm)
   );
 
 // 导出按钮点击事件
@@ -37,7 +43,7 @@ const handleExport = () => {
   
 
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay"> 
       <div className="modal-content">
         <button className="close-btn" onClick={onClose}>X</button>
         <h2>操作门锁记录</h2>
@@ -61,18 +67,18 @@ const handleExport = () => {
         <table className="table">
           <thead>
             <tr>
-              <th>时间</th>
-              <th>用户</th>
-              <th>状态</th>
+            <th>User Address</th>
+              <th>Timestamp</th>
+              <th>Operation</th>
             </tr>
           </thead>
           <tbody>
             {filteredData.length > 0 ? (
               filteredData.map((item, index) => (
                 <tr key={index}>
-                  <td>{item.time}</td>
                   <td>{item.user}</td>
-                  <td>{item.status}</td>
+                  <td>{new Date(item.timestamp * 1000).toLocaleString()}</td> {/* 格式化时间戳 */}
+                  <td>{item.operation}</td>
                 </tr>
               ))
             ) : (

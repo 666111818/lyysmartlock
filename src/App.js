@@ -1,27 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import SmallBox1 from './js/smallbox1'; // 导入 SmallBox1 组件
-import SmallBox2 from './js/smallbox2'; // 导入 SmallBox2 组件
-import { checkMetaMask } from './js/Metamask';
+import AdminPage from './js/AdminPage'; 
+import SmallBox1 from './js/smallbox1'; 
+import SmallBox2 from './js/smallbox2'; 
+import { checkMetaMask,checkSystemUser,fetchLockStatus, toggleLockStatus,getIdentityTimestamp  } from './js/Metamask';
+import { useNavigate } from 'react-router-dom';
+
 
 function App() {
   const [userAddress, setUserAddress] = useState('');
   const [isLocked, setIsLocked] = useState(true);
+  const [expirationTime, setExpirationTime] = useState(null); 
   const [isModalOpen, setIsModalOpen] = useState(false); // 控制弹出框的显示
-  const [activeModal, setActiveModal] = useState(null); // 控制哪个弹框打开
+  const [activeModal, setActiveModal] = useState(null); //  控制哪个弹框打开
+  const [isSystemUser, setIsSystemUser] = useState(false); // 是否为系统用户
+  const navigate = useNavigate();
 
   const handleConnectMetaMask = async () => {
     const address = await checkMetaMask();
     if (address) {
-      setUserAddress(address);
+      const userStatus = await checkSystemUser(address);
+      if (!userStatus) {
+        alert('你不是该系统用户，将跳转到联系管理员页面。');
+        setActiveModal('box2'); // 跳转到联系管理员弹框
+      } else {
+        setUserAddress(address);
+        setIsSystemUser(true); // 设置为系统用户
+        await fetchLockStatus(address, setIsLocked);
+
+        const timestamp = await getIdentityTimestamp(address);
+        if (timestamp) {
+          const dateTime = new Date(timestamp * 1000); 
+          const formattedDate = `${dateTime.getFullYear()}/${String(dateTime.getMonth() + 1).padStart(2, '0')}/${String(dateTime.getDate()).padStart(2, '0')}`;
+          setExpirationTime(formattedDate);
+        }
+         // 如果是管理员，跳转到管理员页面
+         if (address === '0x483d9448b11d0dfb8136f5a3189ca1f953f3c632') { 
+          navigate('/admin'); // 跳转到 /admin 页面
+        }
+      }
     }
   };
-
-  const toggleLock = () => {
-    setIsLocked((prevState) => !prevState);
+ 
+  const toggleLock = async () => {
+    if (!userAddress || !isSystemUser) {
+      alert('请先登录并确保您是系统用户！');
+      return;
+    }
+     toggleLockStatus(userAddress, isLocked, setIsLocked);
   };
 
   const handleSmallBoxClick = (boxId) => {
+    if (!userAddress || !isSystemUser) {
+      alert('请先登录并确保您是系统用户！');
+      return;
+    }
     setActiveModal(boxId); // 根据点击的框体打开相应的弹框
   };
 
@@ -64,6 +97,9 @@ function App() {
   return (
     <div className="container">
       <div className="big-box">
+        <p>上次验证时间：
+        {expirationTime ? expirationTime.toLocaleString() : '加载中...'}
+        </p>
         <p className="big-box-p">当前锁的状态</p>
         <div className="lock-status">
           <div className={`lock-icon ${isLocked ? 'locked' : 'unlocked'}`}>
@@ -128,8 +164,11 @@ function App() {
 
       {/* 粒子容器 */}
       <div className="particle-container"></div>
+
+      
     </div>
   );
 }
+
 
 export default App;
