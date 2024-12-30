@@ -1,33 +1,35 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../css/AdminPage.css';
-import{fetchUpdatedUsersLockStatus } from './Metamask';
+import { fetchUpdatedUsersLockStatus, toggleLockStatus, fetchIdentityTimestamp, updateIdentity } from './Metamask';
 
 function AdminPage() {
   const [showModal, setShowModal] = useState(false); // 控制弹出框显示状态
   const [searchTerm, setSearchTerm] = useState(''); // 搜索框输入内容
   const [tableData, setTableData] = useState([]); // 表数据
+  const [selectedUser, setSelectedUser] = useState(null); // 选中的用户
 
+  // 获取表格数据
   const fetchTableData = async () => {
     try {
       const data = await fetchUpdatedUsersLockStatus();
       console.log('Fetched table data:', data); // 打印获取到的数据
-      const formattedData = data.map((item) => ({
+      const formattedData = await Promise.all(data.map(async (item) => ({
         address: item.user,
-        lockStatus: item.lockStatus,
-        operation: '', // 暂时留空
-        updateTime: '', // 暂时留空
-        updater: '', // 暂时留空
-      }));
+        lockStatus: item.lockStatus ? '锁定' : '解锁',
+        operation: item.lockStatus ? '解锁' : '锁定',
+        updateTime: await fetchIdentityTimestamp(item.user),
+        updater: '', // 这里可以根据需求设置实际更新者
+      })));
       setTableData(formattedData);
     } catch (error) {
       console.error('Error fetching table data:', error);
     }
   };
+  
+
   useEffect(() => {
     fetchTableData(); // 组件挂载时调用
   }, []);
-
-
 
   const handleManageUsersClick = () => {
     setShowModal(true); // 显示弹出框
@@ -46,6 +48,26 @@ function AdminPage() {
       value.toLowerCase().includes(searchTerm.toLowerCase())
     )
   ); // 模糊查询过滤数据
+
+  // 处理锁定与解锁操作
+  const handleLockUnlock = async (userAddress, isLocked) => {
+    try {
+      await toggleLockStatus(userAddress, isLocked);
+      fetchTableData(); // 更新表格数据
+    } catch (error) {
+      console.error('Error toggling lock status:', error);
+    }
+  };
+
+  // 处理身份验证操作
+  const handleIdentityVerification = async (userAddress, verify) => {
+    try {
+      await updateIdentity(userAddress, verify);
+      fetchTableData(); // 更新表格数据
+    } catch (error) {
+      console.error('Error updating identity:', error);
+    }
+  };
 
   const handleExportTable = () => {
     const csvContent =
@@ -103,7 +125,6 @@ function AdminPage() {
               <button onClick={handleExportTable} className="export-button">
                 导出表格
               </button>
-              
             </div>
 
             {/* 表格 */}
@@ -118,23 +139,59 @@ function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-          {tableData.length > 0 ? (
-            tableData.map((row, index) => (
-              <tr key={index}>
-                <td>{row.address}</td>
-                <td>{row.lockStatus}</td>
-                <td>{row.operation}</td>
-                <td>{row.updateTime}</td>
-                <td>{row.updater}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="5">暂无数据</td>
-            </tr>
-          )}
-        </tbody>
+                {filteredData.length > 0 ? (
+                  filteredData.map((row, index) => (
+                    <tr key={index}>
+                      <td>{row.address}</td>
+                      <td>{row.lockStatus}</td>
+                      <td>
+                        <button
+                          onClick={() =>
+                            handleLockUnlock(
+                              row.address,
+                              row.lockStatus === '解锁'
+                            )
+                          }
+                        >
+                          {row.operation}
+                        </button>
+                      </td>
+                      <td>{row.updateTime}</td>
+                      <td>
+                        <button
+                          onClick={() => setSelectedUser(row.address)}
+                        >
+                          验证
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5">暂无数据</td>
+                  </tr>
+                )}
+              </tbody>
             </table>
+
+            {/* 验证身份弹框 */}
+            {selectedUser && (
+              <div className="identity-modal">
+                <h3>用户身份验证</h3>
+                <p>用户地址: {selectedUser}</p>
+                <button
+                  onClick={() => handleIdentityVerification(selectedUser, true)}
+                >
+                  验证
+                </button>
+                <button
+                  onClick={() => handleIdentityVerification(selectedUser, false)}
+                >
+                  撤销
+                </button>
+                <button onClick={() => setSelectedUser(null)}>关闭</button>
+              </div>
+            )}
 
             <button onClick={handleCloseModal} className="close-modal-button">
               关闭

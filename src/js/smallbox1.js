@@ -1,22 +1,37 @@
 import React, { useState,useEffect  } from 'react';
 import '../css/smallbox1.css'; 
 import * as XLSX from "xlsx";
-import {fetchLockOperations } from './Metamask';
+import { fetchLockOperations, checkMetaMask } from './Metamask'; // 引入新的函数
 
 function SmallBox1({ onClose }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [lockOperations, setLockOperations] = useState([]);
+  const [currentUser, setCurrentUser] = useState('');  // 存储当前登录用户地址
 
-  // 获取锁操作记录
+  // 获取当前登录用户地址
   useEffect(() => {
     const fetchData = async () => {
-      const operations = await fetchLockOperations();
+      if (!currentUser) return;  // 确保用户地址已加载
+      console.log('Fetched lock operations:', operations);  // 打印出操作记录
+      const operations = await fetchLockOperations(currentUser);
+      setLockOperations(operations);
+    };
+  
+    fetchData();
+  }, [currentUser]);  // 依赖当前用户
+  
+
+  // 获取锁操作记录（监听合约事件）
+  useEffect(() => {
+    const fetchData = async () => {
+      const operations = await fetchLockOperations(currentUser);  // 传递当前用户地址来过滤数据
       setLockOperations(operations);
     };
 
-    fetchData();
-  }, []);
-
+    if (currentUser) {  // 确保用户地址已加载
+      fetchData();
+    }
+  }, [currentUser]);  // 依赖当前用户，用户变动时重新获取数据
 
   // 处理搜索框输入
   const handleSearchChange = (event) => {
@@ -28,8 +43,8 @@ function SmallBox1({ onClose }) {
     item.user.includes(searchTerm) || item.operation.includes(searchTerm)
   );
 
-// 导出按钮点击事件
-const handleExport = () => {
+  // 导出按钮点击事件
+  const handleExport = () => {
     // 创建工作表
     const ws = XLSX.utils.json_to_sheet(filteredData);
   
@@ -40,7 +55,6 @@ const handleExport = () => {
     // 导出 Excel 文件，命名为 "操作记录.xlsx"
     XLSX.writeFile(wb, "操作记录.xlsx");
   };
-  
 
   return (
     <div className="modal-overlay"> 
@@ -49,25 +63,24 @@ const handleExport = () => {
         <h2>操作门锁记录</h2>
 
         <div className="search-container">
-  <div className="search-box">
-    <input
-      type="text"
-      placeholder="搜索..."
-      value={searchTerm}
-      onChange={handleSearchChange}
-      className="search-input"
-    />
-    <button className="search-button">搜索</button>
-  </div>
-  <button className="export-button" onClick={handleExport}>导出</button>
-</div>
-
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="搜索..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="search-input"
+            />
+            <button className="search-button">搜索</button>
+          </div>
+          <button className="export-button" onClick={handleExport}>导出</button>
+        </div>
 
         {/* 表格 */}
         <table className="table">
           <thead>
             <tr>
-            <th>User Address</th>
+              <th>User Address</th>
               <th>Timestamp</th>
               <th>Operation</th>
             </tr>
