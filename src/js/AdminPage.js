@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../css/AdminPage.css';
-import { fetchUpdatedUsersLockStatus, toggleLockStatus, fetchIdentityTimestamp, updateIdentity } from './Metamask';
+import { toggleLockStatus, getUserIdentityExpiry,  getUsersWithChangedIdentity, getLockStatus, updateUserIdentity } from './Metamask';
 
 function AdminPage() {
   const [showModal, setShowModal] = useState(false); // 控制弹出框显示状态
@@ -11,21 +11,24 @@ function AdminPage() {
   // 获取表格数据
   const fetchTableData = async () => {
     try {
-      const data = await fetchUpdatedUsersLockStatus();
-      console.log('Fetched table data:', data); // 打印获取到的数据
-      const formattedData = await Promise.all(data.map(async (item) => ({
-        address: item.user,
-        lockStatus: item.lockStatus ? '锁定' : '解锁',
-        operation: item.lockStatus ? '解锁' : '锁定',
-        updateTime: await fetchIdentityTimestamp(item.user),
-        updater: '', // 这里可以根据需求设置实际更新者
-      })));
+      const data = await getUsersWithChangedIdentity();
+      console.log('Fetched users with changed identity:', data); // 打印获取到的数据
+      const formattedData = await Promise.all(data.map(async (item) => {
+        const isLocked = await getLockStatus(item);
+        const identityExpiry = await getUserIdentityExpiry(item);
+        return {
+          address: item,
+          lockStatus: isLocked ? '锁定' : '解锁',
+          operation: isLocked ? '解锁' : '锁定',
+          updateTime: identityExpiry,
+          updater: '', // 这里可以根据需求设置实际更新者
+        };
+      }));
       setTableData(formattedData);
     } catch (error) {
       console.error('Error fetching table data:', error);
     }
   };
-  
 
   useEffect(() => {
     fetchTableData(); // 组件挂载时调用
@@ -35,7 +38,7 @@ function AdminPage() {
     setShowModal(true); // 显示弹出框
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = () => { 
     setShowModal(false); // 关闭弹出框
   };
 
@@ -62,7 +65,7 @@ function AdminPage() {
   // 处理身份验证操作
   const handleIdentityVerification = async (userAddress, verify) => {
     try {
-      await updateIdentity(userAddress, verify);
+      await updateUserIdentity(userAddress, verify);
       fetchTableData(); // 更新表格数据
     } catch (error) {
       console.error('Error updating identity:', error);
@@ -95,14 +98,14 @@ function AdminPage() {
 
       <div className="admin-boxes">
         <div className="admin-box">
-          <h2>管理用户门锁开关</h2>
-          <button onClick={handleManageUsersClick}>管理用户</button>
+          <h2>用户信息</h2>
+          <button onClick={handleManageUsersClick}>查看用户信息</button>
         </div>
 
         <div className="admin-box">
-          <h2>添加用户</h2>
-          <p>在这里你可以添加新用户。</p>
-          <button>添加新用户</button>
+          <h2>操作</h2>
+          <p>开关锁/添加新用户。</p>
+          <button>进入页面</button>
         </div>
       </div>
 
@@ -132,68 +135,16 @@ function AdminPage() {
               <thead>
                 <tr>
                   <th>用户地址</th>
-                  <th>锁的状态</th>
-                  <th>操作</th>
-                  <th>更新时间</th>
-                  <th>验证身份</th>
+                  <th>时间</th>
+                  <th>状态</th>
                 </tr>
               </thead>
-              <tbody>
-                {filteredData.length > 0 ? (
-                  filteredData.map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.address}</td>
-                      <td>{row.lockStatus}</td>
-                      <td>
-                        <button
-                          onClick={() =>
-                            handleLockUnlock(
-                              row.address,
-                              row.lockStatus === '解锁'
-                            )
-                          }
-                        >
-                          {row.operation}
-                        </button>
-                      </td>
-                      <td>{row.updateTime}</td>
-                      <td>
-                        <button
-                          onClick={() => setSelectedUser(row.address)}
-                        >
-                          验证
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5">暂无数据</td>
-                  </tr>
-                )}
-              </tbody>
+              
             </table>
 
-            {/* 验证身份弹框 */}
-            {selectedUser && (
-              <div className="identity-modal">
-                <h3>用户身份验证</h3>
-                <p>用户地址: {selectedUser}</p>
-                <button
-                  onClick={() => handleIdentityVerification(selectedUser, true)}
-                >
-                  验证
-                </button>
-                <button
-                  onClick={() => handleIdentityVerification(selectedUser, false)}
-                >
-                  撤销
-                </button>
-                <button onClick={() => setSelectedUser(null)}>关闭</button>
-              </div>
-            )}
+           
 
-            <button onClick={handleCloseModal} className="close-modal-button">
+            <button onClick={handleCloseModal} className="close-modal-button">   
               关闭
             </button>
           </div>

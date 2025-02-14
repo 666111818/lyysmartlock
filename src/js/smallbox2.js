@@ -7,7 +7,7 @@ function SmallBox2({ onClose }) {
 
     // 模拟表格数据
     const data = [
-        { Admin: '小姐', contact: '245', sex: '女' },
+        { Admin: '小小', contact: '245', sex: '女' },
       { Admin: '数据', contact: '423346544554', sex: '男' },
       { Admin: '小猫', contact: '4234554', sex: '女' }
     ];
@@ -22,9 +22,7 @@ function SmallBox2({ onClose }) {
         item.Admin.includes(searchTerm) || item.contact.includes(searchTerm) || item.sex.includes(searchTerm)
       );
       
-  
- 
-    
+
   
     return (
       <div className="modal-overlay">

@@ -1,63 +1,54 @@
-import React, { useState,useEffect  } from 'react';
-import '../css/smallbox1.css'; 
-import * as XLSX from "xlsx";
-import { fetchLockOperations, checkMetaMask } from './Metamask'; // 引入新的函数
+import React, { useState, useEffect } from 'react';
+import '../css/smallbox1.css';
+import * as XLSX from 'xlsx';
+import { checkMetaMask, getUserOperationsTable } from './Metamask'; // 引入新的函数
 
 function SmallBox1({ onClose }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [lockOperations, setLockOperations] = useState([]);
-  const [currentUser, setCurrentUser] = useState('');  // 存储当前登录用户地址
+  const [currentUser, setCurrentUser] = useState(''); // 存储当前登录用户地址
 
-  // 获取当前登录用户地址
+  // 获取当前登录用户地址和操作记录
   useEffect(() => {
     const fetchData = async () => {
-      if (!currentUser) return;  // 确保用户地址已加载
-      console.log('Fetched lock operations:', operations);  // 打印出操作记录
-      const operations = await fetchLockOperations(currentUser);
-      setLockOperations(operations);
+      const userAddress = await checkMetaMask(); // 获取 MetaMask 当前用户地址
+      if (userAddress) {
+        setCurrentUser(userAddress);
+        const operations = await getUserOperationsTable(userAddress); // 获取用户操作记录
+        setLockOperations(operations); // 将获取的操作记录设置到 state 中
+      }
     };
-  
+
     fetchData();
-  }, [currentUser]);  // 依赖当前用户
-  
-
-  // 获取锁操作记录（监听合约事件）
-  useEffect(() => {
-    const fetchData = async () => {
-      const operations = await fetchLockOperations(currentUser);  // 传递当前用户地址来过滤数据
-      setLockOperations(operations);
-    };
-
-    if (currentUser) {  // 确保用户地址已加载
-      fetchData();
-    }
-  }, [currentUser]);  // 依赖当前用户，用户变动时重新获取数据
+  }, []); // 组件首次加载时执行一次
 
   // 处理搜索框输入
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
+    
   };
 
-  // 过滤表格数据
+  // 过滤表格数据，忽略大小写
   const filteredData = lockOperations.filter(item =>
-    item.user.includes(searchTerm) || item.operation.includes(searchTerm)
+    item.user.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    item.operation.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // 导出按钮点击事件
   const handleExport = () => {
-    // 创建工作表
+    // 创建工作表 
     const ws = XLSX.utils.json_to_sheet(filteredData);
-  
+
     // 创建工作簿并附加工作表
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "操作记录");
-  
+
     // 导出 Excel 文件，命名为 "操作记录.xlsx"
     XLSX.writeFile(wb, "操作记录.xlsx");
   };
 
   return (
-    <div className="modal-overlay"> 
+    <div className="modal-overlay">
       <div className="modal-content">
         <button className="close-btn" onClick={onClose}>X</button>
         <h2>操作门锁记录</h2>
@@ -85,7 +76,7 @@ function SmallBox1({ onClose }) {
               <th>Operation</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="operations-table-body">
             {filteredData.length > 0 ? (
               filteredData.map((item, index) => (
                 <tr key={index}>
@@ -102,7 +93,7 @@ function SmallBox1({ onClose }) {
           </tbody>
         </table>
       </div>
-    </div>
+    </div> 
   );
 }
 
