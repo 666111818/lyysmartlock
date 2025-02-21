@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { IDENTITY_CONTRACT_ADDRESS, IDENTITY_ABI } from '../contract/identityOracle.js';
 import { SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI } from '../contract/SmartLock.js';
 
-// 连接MetaMask，获取用户的地址
+// 连接MetaMask，获取用户的地址   
 
 export const checkMetaMask = async () => {
   if (window.ethereum) {
@@ -23,7 +23,7 @@ export const checkMetaMask = async () => {
 };
 
 
-// 判断用户是否为系统用户  
+// 判断用户是否为系统用户   
 export const checkSystemUser = async (userAddress) => {
   const provider = new ethers.BrowserProvider(window.ethereum);
   const signer = await provider.getSigner();
@@ -37,7 +37,7 @@ export const checkSystemUser = async (userAddress) => {
   } catch (error) {
     console.error('Error checking system user:', error);
     alert('Failed to check user status. Please try again.');
-    return false; // 如果有错误，返回 false
+    return false; // 如果有错误，返回 false   
   }
 };
 
@@ -48,9 +48,8 @@ export const checkIfAdmin = async (userAddress) => {
   const contract = new ethers.Contract(IDENTITY_CONTRACT_ADDRESS, IDENTITY_ABI, signer);
 
   try {
-    console.log('Checking if address is admin:', userAddress);
-    const verifiedUsers = await contract.getAllVerifiedUsers();   
-    const isAdmin = verifiedUsers.includes(userAddress);
+    console.log('Checking if address is admin:', userAddress);   
+    const isAdmin = await contract.admins(userAddress);
     console.log('Admin status:', isAdmin);
     return isAdmin;    
   } catch (error) {
@@ -59,8 +58,6 @@ export const checkIfAdmin = async (userAddress) => {
     return false; // 错误情况下返回 false
   }
 };
-
-
 
 
 export const getUserIdentityExpiry = async (userAddress) => {
@@ -117,8 +114,26 @@ export const getLockStatus = async (address, setIsLocked) => {
 
 
 
+
+export const  getVerifiedUsers =async() =>{
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const contract = new ethers.Contract(IDENTITY_CONTRACT_ADDRESS, IDENTITY_ABI, signer);
+  try {
+    const users = await contract.getAllVerifiedUsers();
+    console.log('Verified Users:', users); // 查看返回的数据
+    return users; // 返回正确的格式
+  } catch (error) {
+    console.error('Error fetching users:', error);
+  }
+}
+
+
+
+// *************************************  
+
 // 切换系统锁定状态
- export const toggleLockStatus = async (address, setIsLocked) => {
+export const toggleLockStatus = async (address, setIsLocked) => {
   if (!window.ethereum) {
     alert('Please install MetaMask!');
     return;
@@ -205,7 +220,7 @@ export const getUsersWithChangedIdentity = async () => {
   const users = await contract.getChangedIdentities();
   return users;
 };
-// 更新用户身份状态为true（验证通过）
+// 更新用户身份状态为true（验证通过） 
 export const updateUserIdentity = async (userAddress, status) => {
   const provider = new ethers.BrowserProvider(window.ethereum);
   const signer = await provider.getSigner();
@@ -223,12 +238,7 @@ export const updateUserIdentity = async (userAddress, status) => {
 };
 
 
-
-// *************************************
-
-
-
-// 获取用户身份验证的过期时间戳（IdentityOracle合约）
+// 获取用户身份验证的过期时间戳（IdentityOracle合约）小何通行证
 
   
 // 获取用户身份（是否是系统用户）

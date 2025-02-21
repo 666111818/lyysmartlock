@@ -15,68 +15,46 @@ function App() {
   const [isSystemUser, setIsSystemUser] = useState(false);
   const navigate = useNavigate();
 
-  // 连接MetaMask
-  const handleConnectMetaMask = async () => {
-    const address = await checkMetaMask();
-    if (address) {
-      const userStatus = await checkSystemUser(address);
-      // 如果是管理员，跳转到管理员页面
-      if (await checkIfAdmin(address)) {
-        navigate('/admin'); 
-      }if (!userStatus) {
-        alert('你不是该系统用户，将跳转到联系管理员页面。');
-        setActiveModal('box2'); // 跳转到联系管理员
-      } else {
-        setUserAddress(address);
-        setIsSystemUser(true); // 设置为系统用户
-        await getLockStatus(address, setIsLocked); // 获取锁定状态
+ // 连接MetaMask
+const handleConnectMetaMask =async() =>{
+  const address = await checkMetaMask();
+  if(address){
+    setUserAddress(address);// 在成功连接MetaMask时设置用户地址  
 
-        // 获取用户身份验证的过期时间戳并转换为日期格式
-        const expiryTimestamp = await getUserIdentityExpiry(address);
-        if (expiryTimestamp) {
-          const expiryDate = new Date(expiryTimestamp * 1000); // 将秒级时间戳转换为毫秒级
-          setExpirationTime(expiryDate); // 设置过期时间
-        }
+    // 先检查是否是管理员
+    const isAdmin = await checkIfAdmin(address);
+    if(isAdmin){
+      navigate('/admin');
+      return;
+    }
+
+    // 如果不是管理员，检查是否是系统用户
+    const userStatus = await checkSystemUser(address);
+    if(!userStatus){
+      alert('你不是该系统用户，将跳转到联系管理员页面');
+      setActiveModal('box2');
+    } else {
+      setIsSystemUser(true);  // 设置为系统用户
+      await getLockStatus(address,setIsLocked); // 获取锁的状态
+
+      // 获取用户身份验证的过期时间戳并转换日期格式
+      const expiryTimestamp = await getUserIdentityExpiry(address);
+      if(expiryTimestamp){
+        const expiryDate = new Date(expiryTimestamp * 1000); // 将秒级时间戳转换为毫秒级
+          setExpirationTime(expiryDate); // 设置过期时间   
       }
     }
-  };
+  }
+}
 
-  // const handleConnectMetaMask = async () => {
-  //   const address = await checkMetaMask();
-  //   if (address) {
-  //     const userStatus = await checkSystemUser(address);
-  //     if (!userStatus) {
-  //       alert('你不是该系统用户，将跳转到联系管理员页面。');
-  //       setActiveModal('box2'); // 跳转到联系管理员
-  //     } else {
-  //       setUserAddress(address);
-  //       setIsSystemUser(true); // 设置为系统用户
-  //       await getLockStatus(address, setIsLocked); // 获取锁定状态
 
-  //       // 获取用户身份验证的过期时间戳并转换为日期格式
-  //       const expiryTimestamp = await getUserIdentityExpiry(address);
-  //       if (expiryTimestamp) {
-  //         const expiryDate = new Date(expiryTimestamp * 1000); // 将秒级时间戳转换为毫秒级
-  //         setExpirationTime(expiryDate); // 设置过期时间
-  //       }
-
-  //       // 如果是管理员，跳转到管理员页面
-  //       if (await checkIfAdmin(address)) {
-  //         navigate('/admin'); 
-  //       }
-  //     }
-  //   }
-  // };
-
-  
-
-  // 切换门锁状态
+  // 切换门锁状态  
   const toggleLock = async () => {
     if (!userAddress || !isSystemUser) {
       alert('请先登录并确保您是系统用户！');
       return;
     }
-    await toggleLockStatus(userAddress, setIsLocked); // 切换锁的状态
+    await toggleLockStatus(userAddress, setIsLocked); // 切换锁的状态   
   };
 
   const handleSmallBoxClick = (boxId) => {
