@@ -22,8 +22,7 @@ export const checkMetaMask = async () => {
   }
 };
 
-
-// 判断用户是否为系统用户   
+// 判断用户是否为系统用户      
 export const checkSystemUser = async (userAddress) => {
   const provider = new ethers.BrowserProvider(window.ethereum);
   const signer = await provider.getSigner();
@@ -33,7 +32,7 @@ export const checkSystemUser = async (userAddress) => {
     console.log('Checking system user status for address:', userAddress);
     const isSystemUser = await contract.getUserIdentity(userAddress);
     console.log('System user status:', isSystemUser); // 输出返回的系统身份状态
-    return isSystemUser;
+    return isSystemUser;  
   } catch (error) {
     console.error('Error checking system user:', error);
     alert('Failed to check user status. Please try again.');
@@ -55,7 +54,7 @@ export const checkIfAdmin = async (userAddress) => {
   } catch (error) {
     console.error('Error checking admin status:', error);
     alert('Failed to check admin status. Please try again.');
-    return false; // 错误情况下返回 false
+    return false; // 错误情况下返回 false     
   }
 };
 
@@ -67,10 +66,10 @@ export const getUserIdentityExpiry = async (userAddress) => {
   }
   
   try {
-    // 创建与 IdentityOracle 合约的连接
+    // 创建与 IdentityOracle 合约的连接   
   const provider = new ethers.BrowserProvider(window.ethereum);
   const contract = new ethers.Contract(IDENTITY_CONTRACT_ADDRESS, IDENTITY_ABI, provider);
-    // 调用 getIdentityExpiry 方法获取用户身份验证的过期时间戳 
+    // 调用 getIdentityExpiry 方法获取用户身份验证的过期时间戳   
     const expiryTimestamp = await contract.getIdentityExpiry(userAddress);
     console.log(`User identity expiry timestamp: ${expiryTimestamp}`);
     return expiryTimestamp.toString();
@@ -79,7 +78,7 @@ export const getUserIdentityExpiry = async (userAddress) => {
   }
 };
 
-// 获取当前门锁状态
+// 获取当前门锁状态   
 
 export const getLockStatus = async (address, setIsLocked) => {
   if (!window.ethereum) {
@@ -96,12 +95,12 @@ export const getLockStatus = async (address, setIsLocked) => {
     const userOperations = await contract.getUserOperations(address);
     console.log('User operations:', userOperations);
 
-    // 获取最后一条操作记录
+    // 获取最后一条操作记录     
     const lastOperation = userOperations[userOperations.length - 1];
 
     // 判断最后一条操作是否是 "Lock"，如果是，设置锁定状态为 true，否则为 false
     const isLocked = lastOperation === "Lock";
-    console.log('Current lock status based on last operation:', isLocked); // 输出锁定状态
+    console.log('Current lock status based on last operation:', isLocked); // 输出锁定状态   
 
     // 更新UI
     setIsLocked(isLocked); // 设置门锁状态
@@ -111,10 +110,6 @@ export const getLockStatus = async (address, setIsLocked) => {
   }
 };
 
-
-
-
-
 export const  getVerifiedUsers =async() =>{
   const provider = new ethers.BrowserProvider(window.ethereum);
   const signer = await provider.getSigner();
@@ -122,7 +117,7 @@ export const  getVerifiedUsers =async() =>{
   try {
     const users = await contract.getAllVerifiedUsers();
     console.log('Verified Users:', users); // 查看返回的数据
-    return users; // 返回正确的格式
+    return users; // 返回正确的格式   
   } catch (error) {
     console.error('Error fetching users:', error);
   }
@@ -132,7 +127,7 @@ export const  getVerifiedUsers =async() =>{
 
 // *************************************  
 
-// 切换系统锁定状态
+// 切换系统锁定状态      
 export const toggleLockStatus = async (address, setIsLocked) => {
   if (!window.ethereum) {
     alert('Please install MetaMask!');
@@ -161,7 +156,7 @@ export const toggleLockStatus = async (address, setIsLocked) => {
       console.log("Unlocking the door...");
     } else {
       // 如果当前是解锁状态，则调用锁定函数
-      await contract.lock(address); // 调用锁定
+      await contract.lock(address); // 调用锁定   
       console.log("Locking the door...");
     } 
 
@@ -169,15 +164,32 @@ export const toggleLockStatus = async (address, setIsLocked) => {
     setIsLocked(!currentLockStatus); // 切换锁定状态并更新 UI
   } catch (error) {
     console.error('Error toggling lock status:', error);
-    alert('Failed to toggle lock status. Please try again1111.');
+    alert('身份已过期，请联系管理员重新验证身份');
   }
 };
+
+// 管理员获取锁的状态
+export const checkLockStatus  = async (userAddress)=>{
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer =await provider.getSigner();
+  const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS,SMART_LOCK_ABI,signer);
+
+  try{
+    console.log('Checking lock status for address:',userAddress);
+    const lockStatus =await contract.getLockStatus(userAddress);
+    console.log('lock status:',lockStatus);
+    return lockStatus;
+  }catch (error){
+    console.log('Error checking lock status:',error);
+    return true;// 默认返回关锁状态
+  }
+
+}
 
 
 
 // // ******************************************* 
-// 获取锁操作记录
-
+// 获取锁操作记录    
 export const getUserOperationsTable = async (address) => {
   if (!window.ethereum) {
     alert('Please install MetaMask!');
@@ -185,18 +197,18 @@ export const getUserOperationsTable = async (address) => {
   }
 
   try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
+    const provider = new ethers.BrowserProvider(window.ethereum); 
     const signer = await provider.getSigner();
-    const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI, signer);
+    const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI, signer);  
 
-    // 获取用户的操作记录
+    // 获取用户的操作记录   
     const userOperations = await contract.getUserOperations(address);
     console.log('User operations:', userOperations);
 
     // 获取当前时间戳
     const currentTimestamp = Math.floor(Date.now() / 1000);
 
-    // 将操作记录格式化为表格可以显示的数据
+    // 将操作记录格式化为表格可以显示的数据   
     const operationsData = userOperations.map((operation, index) => {
       return {
         user: address,
@@ -238,7 +250,7 @@ export const updateUserIdentity = async (userAddress, status) => {
 };
 
 
-// 获取用户身份验证的过期时间戳（IdentityOracle合约）小何通行证
+// 获取用户身份验证的过期时间戳（IdentityOracle合约）
 
   
 // 获取用户身份（是否是系统用户）
@@ -260,7 +272,7 @@ export const updateUserIdentity = async (userAddress, status) => {
 //     } catch (error) {
 //       console.error('Error fetching user identity:', error);
 //       return false; // 如果出错则返回false
-//     }
+//     } 
 //   };
   
   
@@ -367,17 +379,6 @@ export const updateUserIdentity = async (userAddress, status) => {
 //     console.error('Error updating identity:', error);
 //   }
 // };
-
-
-
-
-
-
-
-
-
-
-
 
 
   // export const checkSystemUser = async (address) => {

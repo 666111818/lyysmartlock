@@ -18,7 +18,7 @@ function SmallBox2({ onClose }) {
     };
   
     // 过滤表格数据
-    const filteredData = data.filter(item =>
+    const filteredData = data.filter(item =>      
         item.Admin.includes(searchTerm) || item.contact.includes(searchTerm) || item.sex.includes(searchTerm)
       );
       

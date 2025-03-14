@@ -28,7 +28,7 @@ const handleConnectMetaMask =async() =>{
       return;
     }
 
-    // 如果不是管理员，检查是否是系统用户
+    // 如果不是管理员，检查是否是系统用户    
     const userStatus = await checkSystemUser(address);
     if(!userStatus){
       alert('你不是该系统用户，将跳转到联系管理员页面');

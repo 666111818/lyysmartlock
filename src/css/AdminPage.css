@@ -105,7 +105,7 @@
 
 .search-export {
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
@@ -115,7 +115,7 @@
     width: 60%;
     max-width: 400px;
     border: 2px solid #3c8a5b;
-    border-radius: 30px 0 0 30px; /* 左侧圆角 */
+    border-radius: 30px 0 0 30px;
     font-size: 16px;
     color: #ffffff;
     background: linear-gradient(135deg, #1b3023, #244634);
@@ -140,7 +140,7 @@
     background: #3c8a5b;
     color: white;
     border: none;
-    border-radius: 0 30px 30px 0; /* 右侧圆角 */
+    border-radius: 0 30px 30px 0;
     font-size: 16px;
     cursor: pointer;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -160,7 +160,7 @@
     border-radius: 10px;
     font-size: 16px;
     cursor: pointer;
-    margin-left: 20px; 
+    margin-left: 20px;
 }
 
 .export-button:hover {
@@ -217,3 +217,42 @@
 .close-modal-button:hover {
     background: #2e7046;
 }
+/* 操作按钮容器 */
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+  
+  /* 验证按钮特殊样式 */
+  .verify-button {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #5ac09d, #3c8a5b);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  
+  .verify-button:hover {
+    background: linear-gradient(135deg, #3c8a5b, #2e7046);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* 调整操作页面表格间距 */
+  .modal-content .user-table {
+    margin: 20px 0;
+  }
+  
+  /* 操作按钮悬停动画 */
+  .operation-button {
+    transition: all 0.3s ease;
+    padding: 10px 20px;
+  }
+  
+  .operation-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
