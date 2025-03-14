@@ -21,7 +21,7 @@ const handleConnectMetaMask =async() =>{
   if(address){
     setUserAddress(address);// 在成功连接MetaMask时设置用户地址  
 
-    // 先检查是否是管理员
+    // 先检查是否是管理员     
     const isAdmin = await checkIfAdmin(address);
     if(isAdmin){
       navigate('/admin');
@@ -54,12 +54,12 @@ const handleConnectMetaMask =async() =>{
       alert('请先登录并确保您是系统用户！');
       return;
     }
-    await toggleLockStatus(userAddress, setIsLocked); // 切换锁的状态   
+    await toggleLockStatus(userAddress, setIsLocked); // 切换锁的状态     
   };
 
   const handleSmallBoxClick = (boxId) => {
     if (!userAddress || !isSystemUser) {
-      alert('请先登录并确保您是系统用户！');
+      alert('请先登录并确保您是系统用户！');  
       return;
     }
     setActiveModal(boxId); // 根据点击的框体打开相应的弹框
