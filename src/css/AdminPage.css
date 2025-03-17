@@ -256,3 +256,25 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
+  .lock-btn {
+    padding: 5px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  
+  .lock-btn.locked {
+    background-color: #ff4444;
+    color: white;
+  }
+  
+  .lock-btn.unlocked {
+    background-color: #00C851;
+    color: white;
+  }
+  
+  .lock-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
