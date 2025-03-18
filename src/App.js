@@ -35,7 +35,9 @@ const handleConnectMetaMask =async() =>{
       setActiveModal('box2');
     } else {
       setIsSystemUser(true);  // 设置为系统用户
-      await getLockStatus(address,setIsLocked); // 获取锁的状态
+      // await getLockStatus(address,setIsLocked); // 获取锁的状态
+      const currentLockStatus =await getLockStatus(address);
+      setIsLocked(currentLockStatus);
 
       // 获取用户身份验证的过期时间戳并转换日期格式
       const expiryTimestamp = await getUserIdentityExpiry(address);
@@ -109,20 +111,18 @@ const handleConnectMetaMask =async() =>{
         </p>
         <p className="big-box-p">当前锁的状态</p>
         <div className="lock-status">
-          <div className={`lock-icon ${isLocked ? 'locked' : 'unlocked'}`}>
+        <div className={`lock-icon ${isLocked ? 'locked' : 'unlocked'}`}>
             {isLocked ? '🔒' : '🔓'}
           </div>
           <h2 className="lock-message">
             {isLocked ? '锁已关闭' : '锁已打开'}
           </h2>
-        </div>
-        <div className="lock-control">
-          <button
-            className={`circle-button ${isLocked ? 'locked' : 'unlocked'}`}
-            onClick={toggleLock}
-          >
-            {isLocked ? '🔓 开锁' : '🔒 关锁'}
-          </button>
+          <button 
+              className={`circle-button ${isLocked ? 'locked' : 'unlocked'}`}
+              onClick={toggleLock} // 添加点击事件绑定
+            >
+              {isLocked ? '🔓 开锁' : '🔒 关锁'}
+            </button>
         </div>
       </div>
 

@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../css/AdminPage.css';
-import {getVerifiedUsers, 
-  getUserUnlockTime,
-  getLockStatus,
-  toggleUserLock,
-  checkIfAdmin,
-  updateUserIdentity} from './Metamask';
+import {getVerifiedUsers,getLockStatus,toggleUserLock,getUserUnlockTime,updateUserIdentity,getUserIdentityExpiry } from './Metamask';
 
 function AdminPage() {
   const [showUserModal, setShowUserModal] = useState(false);
@@ -13,6 +8,10 @@ function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [tableData, setTableData] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [newUserAddress, setNewUserAddress] = useState('');
+  const [deleteUserAddress, setDeleteUserAddress] = useState('');
 
   // 获取用户数据
   const fetchVerifiedUsers = async () => {
@@ -20,9 +19,17 @@ function AdminPage() {
       const users = await getVerifiedUsers();
       const usersWithLockData = await Promise.all(
         users.map(async (user) => {
-          const unlockTime = await getUserUnlockTime(user);
-          const lockStatus = await getLockStatus(user);
-          return { address: user, unlockTime, lockStatus };
+          const [unlockTime, lockStatus, expiry] = await Promise.all([
+            getUserUnlockTime(user),
+            getLockStatus(user),
+            getUserIdentityExpiry(user) // 获取身份验证过期时间
+          ]);
+          return { 
+            address: user, 
+            unlockTime: Number(unlockTime),
+            lockStatus,
+            expiry: Number(expiry)
+          };
         })
       );
       setTableData(usersWithLockData);
@@ -35,15 +42,38 @@ function AdminPage() {
     fetchVerifiedUsers();
   }, []);
 
-  // 新增操作处理函数
-  const handleAddUser = () => {
-    console.log("添加新用户");
-    // 这里添加实际逻辑
+  const handleAddUser = async () => {
+    try {
+      if (!newUserAddress) {
+        alert('请输入用户地址');
+        return;
+      }
+      await updateUserIdentity(newUserAddress, true);
+      alert('用户添加成功！');
+      setNewUserAddress('');
+      setShowAddModal(false);
+      await fetchVerifiedUsers(); // 刷新数据
+    } catch (error) {
+      console.error('添加用户失败:', error);
+      alert(`操作失败: ${error.reason || error.message}`);
+    }
   };
-
-  const handleDeleteUser = () => {
-    console.log("删除用户"); 
-    // 这里添加实际逻辑
+  
+  const handleDeleteUser = async () => {
+    try {
+      if (!deleteUserAddress) {
+        alert('请输入用户地址');
+        return;
+      }
+      await updateUserIdentity(deleteUserAddress, false);
+      alert('用户删除成功！');
+      setDeleteUserAddress('');
+      setShowDeleteModal(false);
+      await fetchVerifiedUsers(); // 刷新数据
+    } catch (error) {
+      console.error('删除用户失败:', error);
+      alert(`操作失败: ${error.reason || error.message}`);
+    }
   };
 
 
@@ -52,15 +82,16 @@ function AdminPage() {
     setIsProcessing(true);
     
     try {
-      // 调用合约方法切换锁状态
       await toggleUserLock(address, !currentStatus);
       
-      // 更新本地状态
+      // 获取最新解锁时间
+      const newExpiry = await getUserIdentityExpiry(address);
+      
       const updatedData = tableData.map(user => 
         user.address === address ? { 
           ...user, 
           lockStatus: !currentStatus,
-          unlockTime: !currentStatus ? Math.floor(Date.now() / 1000) : user.unlockTime
+          expiry: Number(newExpiry)
         } : user
       );
       
@@ -73,34 +104,31 @@ function AdminPage() {
     setIsProcessing(false);
   };
 
-const handleVerifyIdentity = async (address) => {
-  try {
-    // 调用合约方法更新身份验证状态
-    await updateUserIdentity(address, true);
-    
-    // 更新本地数据
-    const updatedData = tableData.map(user => {
-      if (user.address === address) {
-        return {
-          ...user,
-          expiry: Math.floor(Date.now() / 1000) + 300, // 假设默认超时300秒
-          lockStatus: false
-        };
-      }
-      return user;
-    });
-    
-    setTableData(updatedData);
-    alert('用户验证已更新！');
-    
-    // 可选：重新从区块链获取最新数据
-    // await fetchVerifiedUsers();
-    
-  } catch (error) {
-    console.error('验证失败:', error);
-    alert(`操作失败: ${error.reason || error.message}`);
-  }
-};
+  const handleVerifyIdentity = async (address) => {
+    try {
+      await updateUserIdentity(address, true);
+      
+      // 获取最新身份验证过期时间
+      const newExpiry = await getUserIdentityExpiry(address);
+      
+      const updatedData = tableData.map(user => {
+        if (user.address === address) {
+          return {
+            ...user,
+            expiry: Number(newExpiry),
+            lockStatus: false
+          };
+        }
+        return user;
+      });
+      
+      setTableData(updatedData);
+      alert('用户验证已更新！');
+    } catch (error) {
+      console.error('验证失败:', error);
+      alert(`操作失败: ${error.reason || error.message}`);
+    }
+  };
 
   // 弹窗关闭处理
   const handleCloseModal = (setter) => () => setter(false);
@@ -177,10 +205,10 @@ const handleVerifyIdentity = async (address) => {
         <tr key={index}>
           <td>{user.address}</td>
           <td>
-            {user.unlockTime ? 
-              new Date(user.unlockTime * 1000).toLocaleString() : 
-              '暂无记录'}
-          </td>
+                      {user.expiry > 0 ? 
+                        new Date(user.expiry * 1000).toLocaleString() : 
+                        '暂无记录'}
+                    </td>
           <td>
             <button 
               className={`lock-btn ${user.lockStatus ? 'locked' : 'unlocked'}`}
@@ -204,27 +232,24 @@ const handleVerifyIdentity = async (address) => {
         </div>
       )}
 
-      {/* 操作页面弹窗 */}
-      {/* 操作页面弹窗 */}
 {showOtherModal && (
   <div className="modal-overlay">
     <div className="modal-content">
       <h2>用户操作</h2>
       <div className="action-buttons">
-        <button className="operation-button" onClick={handleAddUser}>
-          添加新用户
-        </button>
-        <button className="operation-button" onClick={handleDeleteUser}>
-          删除用户
-        </button>
-      </div>
+  <button className="operation-button" onClick={() => setShowAddModal(true)}>
+    添加新用户
+  </button>
+  <button className="operation-button delete" onClick={() => setShowDeleteModal(true)}>
+    删除用户
+  </button>
+</div>
 
       <table className="user-table">
         <thead>
           <tr>
             <th>用户地址</th>
-            {/* 修改表头为验证时间 */}
-            <th>验证时间</th>
+            <th>身份过期时间</th>
             <th>验证身份</th>
           </tr>
         </thead>
@@ -233,7 +258,11 @@ const handleVerifyIdentity = async (address) => {
             <tr key={index}>
               <td>{user.address}</td>
              
-              <td>{user.expiry ? new Date(user.expiry * 1000).toLocaleString() : '未验证'}</td>
+              <td>
+                {user.expiry > 0 ? 
+                  new Date(user.expiry * 1000).toLocaleString() : 
+                  '未验证'}
+              </td>
               <td>
                 <button 
                   className="verify-button"
@@ -242,7 +271,7 @@ const handleVerifyIdentity = async (address) => {
                   验证
                 </button>
               </td>
-            </tr>
+            </tr> 
           ))}
         </tbody>
       </table>
@@ -253,6 +282,56 @@ const handleVerifyIdentity = async (address) => {
       >
         关闭
       </button>
+    </div>
+  </div>
+)}
+{showAddModal && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>添加用户</h2>
+      <div className="modal-input-group">
+        <input
+          type="text"
+          placeholder="输入用户地址"
+          value={newUserAddress}
+          onChange={(e) => setNewUserAddress(e.target.value)}
+          className="modal-input"
+        />
+      </div>
+      <div className="modal-action-buttons">
+        <button className="confirm-button" onClick={handleAddUser}>
+          确认添加
+        </button>
+        <button className="cancel-button" onClick={() => setShowAddModal(false)}>
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* 删除用户弹窗 */}
+{showDeleteModal && (
+  <div className="modal-overlay">
+    <div className="modal-content">
+      <h2>删除用户</h2>
+      <div className="modal-input-group">
+        <input
+          type="text"
+          placeholder="输入用户地址"
+          value={deleteUserAddress}
+          onChange={(e) => setDeleteUserAddress(e.target.value)}
+          className="modal-input"
+        />
+      </div>
+      <div className="modal-action-buttons">
+        <button className="confirm-button delete" onClick={handleDeleteUser}>
+          确认删除
+        </button>
+        <button className="cancel-button" onClick={() => setShowDeleteModal(false)}>
+          取消
+        </button>
+      </div>
     </div>
   </div>
 )}

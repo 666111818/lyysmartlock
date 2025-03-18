@@ -78,37 +78,6 @@ export const getUserIdentityExpiry = async (userAddress) => {
   }
 };
 
-// 获取当前门锁状态   
-
-// export const getLockStatus = async (address, setIsLocked) => {
-//   if (!window.ethereum) {
-//     alert('Please install MetaMask!');
-//     return;
-//   }
-
-//   try {
-//     const provider = new ethers.BrowserProvider(window.ethereum);
-//     const signer = await provider.getSigner();
-//     const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI, signer);
-
-//     // 获取用户的操作记录
-//     const userOperations = await contract.getUserOperations(address);
-//     console.log('User operations:', userOperations);
-
-//     // 获取最后一条操作记录     
-//     const lastOperation = userOperations[userOperations.length - 1];
-
-//     // 判断最后一条操作是否是 "Lock"，如果是，设置锁定状态为 true，否则为 false
-//     const isLocked = lastOperation === "Lock";
-//     console.log('Current lock status based on last operation:', isLocked); // 输出锁定状态   
-
-//     // 更新UI
-//     setIsLocked(isLocked); // 设置门锁状态
-//   } catch (error) {
-//     console.error('Error fetching lock status:', error);
-//     alert('Failed to fetch lock status. Please try again.');
-//   }
-// };
 
 // Metamask.js 新增方法
 export const toggleUserLock = async (userAddress, shouldLock) => {
@@ -148,10 +117,10 @@ export const getUserUnlockTime = async (userAddress) => {
   
   try {
     const time = await contract.userUnlockTimes(userAddress);
-    return time.toString();
+    return Number(time.toString()); // 转换为数字
   } catch (error) {
     console.error('Error getting unlock time:', error);
-    return '0';
+    return 0;
   }
 };
 
@@ -173,43 +142,32 @@ export const  getVerifiedUsers =async() =>{
 // *************************************  
 
 // 切换系统锁定状态      
-export const toggleLockStatus = async (address, setIsLocked) => {
-  if (!window.ethereum) {
-    alert('Please install MetaMask!');
-    return;
-  }
+export const toggleLockStatus = async (userAddress, setIsLocked) => {
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  const signer = await provider.getSigner();
+  const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI, signer);
 
   try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI, signer);
-
-    // 获取用户的操作记录
-    const userOperations = await contract.getUserOperations(address);
-    console.log('User operations:', userOperations);
-
-    // 获取最后一条操作记录
-    const lastOperation = userOperations[userOperations.length - 1];
-
-    // 判断当前状态是锁定还是解锁
-    const currentLockStatus = lastOperation === "Lock"; // 如果最后一条操作是锁定，当前状态是锁定
-
-    // 切换锁的状态
-    if (currentLockStatus) {
-      // 如果当前是锁定状态，则调用解锁函数
-      await contract.unlock(address); // 调用解锁
-      console.log("Unlocking the door...");
+    // 获取当前状态
+    const currentStatus = await contract.userLockStatus(userAddress);
+    
+    // 执行相反操作
+    if (currentStatus) {
+      const tx = await contract.unlock(userAddress);
+      await tx.wait();
     } else {
-      // 如果当前是解锁状态，则调用锁定函数
-      await contract.lock(address); // 调用锁定   
-      console.log("Locking the door...");
-    } 
+      const tx = await contract.lock(userAddress);
+      await tx.wait();
+    }
 
-    // 更新 UI
-    setIsLocked(!currentLockStatus); // 切换锁定状态并更新 UI
+    // 强制刷新状态
+    const updatedStatus = await contract.userLockStatus(userAddress);
+    setIsLocked(updatedStatus);
+    
   } catch (error) {
-    console.error('Error toggling lock status:', error);
-    alert('身份已过期，请联系管理员重新验证身份');
+    console.error('操作失败:', error);
+    // 显示具体错误原因
+    alert(`操作失败: ${error.reason || error.message}`);
   }
 };
 
@@ -310,5 +268,3 @@ export const getUserIdentityTimestamp = async (userAddress) => {
     throw error;
   }
 };
-
-
