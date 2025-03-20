@@ -86,14 +86,17 @@ export const toggleUserLock = async (userAddress, shouldLock) => {
   const contract = new ethers.Contract(SMART_LOCK_CONTRACT_ADDRESS, SMART_LOCK_ABI, signer);
 
   try {
+    let tx;
     if (shouldLock) {
-      const tx = await contract.lock(userAddress);
-      await tx.wait();
+      tx = await contract.lock(userAddress);
     } else {
-      const tx = await contract.unlock(userAddress);
-      await tx.wait();
+      tx = await contract.unlock(userAddress);
     }
-    return true;
+    const receipt = await tx.wait(); // 等待交易确认
+    return { 
+      success: true,
+      hash: receipt.hash 
+    };
   } catch (error) {
     throw error;
   }
@@ -266,5 +269,24 @@ export const getUserIdentityTimestamp = async (userAddress) => {
   } catch (error) {
     console.error('Error getting identity timestamp:', error);
     throw error;
+  }
+};
+
+// 区块信息
+export const fetchTransactionDetails = async (txHash) => {
+  const provider = new ethers.BrowserProvider(window.ethereum);
+  try {
+    const receipt = await provider.getTransactionReceipt(txHash);
+    const block = await provider.getBlock(receipt.blockNumber);
+    
+    return {
+      txHash: txHash,
+      blockNumber: receipt.blockNumber,
+      timestamp: block.timestamp,
+      actionType: '合约操作' // 根据实际操作类型修改
+    };
+  } catch (error) {
+    console.error('Error fetching transaction details:', error);
+    return null;
   }
 };

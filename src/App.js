@@ -51,13 +51,26 @@ const handleConnectMetaMask =async() =>{
 
 
   // 切换门锁状态  
-  const toggleLock = async () => {
-    if (!userAddress || !isSystemUser) {
-      alert('请先登录并确保您是系统用户！');
+const toggleLock = async () => {
+  if (!userAddress || !isSystemUser) {
+    alert('请先登录并确保您是系统用户！');
+    return;
+  }
+
+  // 添加身份验证过期检查
+  if (expirationTime) {
+    const currentTime = Date.now(); // 获取当前时间戳（毫秒）
+    const expiryTime = expirationTime.getTime(); // 转换为毫秒时间戳
+
+    if (currentTime > expiryTime) {
+      alert('身份验证已过期，请联系管理员重新验证！');
+      setActiveModal('box2');
       return;
     }
-    await toggleLockStatus(userAddress, setIsLocked); // 切换锁的状态     
-  };
+  }
+
+  await toggleLockStatus(userAddress, setIsLocked); // 切换锁的状态     
+};
 
   const handleSmallBoxClick = (boxId) => {
     if (!userAddress || !isSystemUser) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../css/AdminPage.css';
-import {getVerifiedUsers,getLockStatus,toggleUserLock,getUserUnlockTime,updateUserIdentity,getUserIdentityExpiry } from './Metamask';
+import {getVerifiedUsers,getLockStatus,toggleUserLock,getUserUnlockTime,updateUserIdentity,getUserIdentityExpiry,fetchTransactionDetails} from './Metamask';
 
 function AdminPage() {
   const [showUserModal, setShowUserModal] = useState(false);
@@ -12,6 +12,9 @@ function AdminPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [newUserAddress, setNewUserAddress] = useState('');
   const [deleteUserAddress, setDeleteUserAddress] = useState('');
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [transactionHistory, setTransactionHistory] = useState([]);
+  
 
   // 获取用户数据
   const fetchVerifiedUsers = async () => {
@@ -41,6 +44,21 @@ function AdminPage() {
   useEffect(() => {
     fetchVerifiedUsers();
   }, []);
+
+  // 获取交易详情的方法
+  const recordTransaction = async (txHash, actionType) => {
+    const details = await fetchTransactionDetails(txHash);
+    if (details) {
+      setTransactionHistory(prev => [
+        {
+          ...details,
+          actionType,
+          timestamp: details.timestamp
+        },
+        ...prev
+      ]);
+    }
+  };
 
   const handleAddUser = async () => {
     try {
@@ -82,10 +100,12 @@ function AdminPage() {
     setIsProcessing(true);
     
     try {
-      await toggleUserLock(address, !currentStatus);
+      const result = await toggleUserLock(address, !currentStatus);
+  await recordTransaction(result.hash, currentStatus ? '解锁' : '锁定');
+     
       
       // 获取最新解锁时间
-      const newExpiry = await getUserIdentityExpiry(address);
+      const newExpiry = await getUserUnlockTime(address);
       
       const updatedData = tableData.map(user => 
         user.address === address ? { 
@@ -160,6 +180,44 @@ function AdminPage() {
   return (
     <div className="admin-container">
       <h1>管理员页面</h1>
+      <div className="block-info-button" onClick={() => setShowBlockModal(true)}>
+        区块详情
+      </div>
+
+      {/* 区块详情模态框 */}
+      {showBlockModal && (
+        <div className="modal-overlay">
+          <div className="modal-content block-modal">
+            <h2>区块链操作记录</h2>
+            <table className="block-table">
+              <thead>
+                <tr>
+                  <th>操作类型</th>
+                  <th>区块高度</th>
+                  <th>时间戳</th>
+                  <th>交易哈希</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactionHistory.map((tx, index) => (
+                  <tr key={index}>
+                    <td>{tx.actionType}</td>
+                    <td>{tx.blockNumber}</td>
+                    <td>{tx.timestamp}</td>
+                    <td className="tx-hash">{tx.txHash}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button 
+              onClick={() => setShowBlockModal(false)}
+              className="close-modal-button"
+            >
+              关闭
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="admin-boxes">
         <div className="admin-box">

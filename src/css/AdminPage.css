@@ -355,4 +355,38 @@
     background: linear-gradient(135deg, #cc0000, #aa0000);
   }
 
+  /* 区块详情按钮样式 */
+.block-info-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #3c8a5b, #2e7046);
+    color: white;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+  
+  .block-info-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+  }
+  
+  /* 区块详情模态框样式 */
+  .block-modal {
+    max-width: 800px;
+  }
+  
+  .block-table {
+    margin: 20px 0;
+  }
+  
+  .block-table th,
+  .block-table td {
+    padding: 12px;
+    text-align: center;
+  }
   
